@@ -5,12 +5,12 @@ import (
     "log"
     "net/http"
     "fmt"
-    "html"
     "time"
     "github.com/gorilla/mux"
     "os/exec"
     "encoding/json"
     "os"
+    "io/ioutil"
 )
 
 const YT_CHAN_LOC="data/youtube/"
@@ -33,6 +33,12 @@ type yt_metadata struct {
     Last_request time.Time
 }
 
+func check_panic(e error) {
+    if e != nil {
+        panic(e)
+    }
+}
+
 func get_podcast(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
 
@@ -44,41 +50,53 @@ func get_podcast(w http.ResponseWriter, r *http.Request) {
     yt_chan_data := yt_chan_path + "/chan-data.json"
     os.MkdirAll(yt_chan_path, 0777)
 
-    var chan_data yt_metadata
-    chan_data.Last_request = time.Now()
+    var metadata yt_metadata
 
     if _, err := os.Stat(yt_chan_data); os.IsNotExist(err) {
-        fmt.Printf("XXX\n");
+        fmt.Printf("Channel does not exist. Will create it.\n");
+    } else {
+        fmt.Printf("Reading data from existing folder.\n");
+        data, err := ioutil.ReadFile(yt_chan_data)
+        check_panic(err)
+
+        err = json.Unmarshal(data, &metadata)
+        check_panic(err)
     }
+    
+    last_request := metadata.Last_request;
 
     // Get JSON containing all channel information
     fmt.Printf("Running youtube-dl for %s\n", yt_chan_url)
-    out, err := exec.Command("youtube-dl", "-J", yt_chan_url).Output()
-    if err != nil {
-        log.Fatal(err)
+    
+    if last_request != 0 {
+        fmt.Printf("Last request was: %s\n", last_request)
     }
+    
+    out, err := exec.Command("youtube-dl", "-J", yt_chan_url).Output()
+    check_panic(err)
 
     // Decode the JSON
     var json_data yt_channel
-    if err := json.Unmarshal(out, &json_data); err != nil {
-        panic(err)
-    }
+    err = json.Unmarshal(out, &json_data)
+    check_panic(err)
 
-    fmt.Printf("uploader %s\n", json_data.Uploader);
+    // Fill the metadata structure
+    metadata.Chan_data.Uploader = json_data.Uploader;
+    metadata.Last_request = time.Now()
 
     for _, entry := range json_data.Entries {
-        //fmt.Printf("%#v\n", val);
         fmt.Printf("title %s\n", entry.Title);
     }
 
-    fmt.Fprintf(w, "%q", html.EscapeString(string(out)))
+    fmt.Fprintf(w, "Done\n")
 
-    if f, err := os.Create(yt_chan_data); err != nil {
-        panic(err);
-    }
+    f, err := os.Create(yt_chan_data)
+    check_panic(err)
 
-    f.Write(json.Marshal(chan_data));
-
+    chan_json, err := json.MarshalIndent(metadata, "", "  ")
+    check_panic(err)
+    
+    f.Write(chan_json)
 }
 
 func main() {
