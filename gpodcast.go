@@ -11,7 +11,10 @@ import (
 )
 
 func get_podcast(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
     
+    xml := get_yt_podcast(vars["yt_channel"])
+    fmt.Fprintf(w, xml)
 }
 
 func main() {
