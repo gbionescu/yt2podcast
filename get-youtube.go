@@ -1,6 +1,4 @@
 package main
-
-
 import (
     "fmt"
     "time"
@@ -9,23 +7,147 @@ import (
     "encoding/json"
     "io/ioutil"
     "bytes"
-    "github.com/jbub/podcasts"
-    "strconv"
+    "github.com/eduncan911/podcast"
 )
 
-const YT_CHAN_LOC="data/youtube/"
-
 type yt_video struct {
-    Upload_date string  `json:"upload_date"`
-    Title string        `json:"title"`
-    Id string           `json:"id"`
-    Duration int        `json:"duration"`
-    Description string  `json:"description"`
+    PlaylistUploader string      `json:"playlist_uploader"`
+    UploadDate       string      `json:"upload_date"`
+    Extractor        string      `json:"extractor"`
+    Series           interface{} `json:"series"`
+    Format           string      `json:"format"`
+    Vbr              interface{} `json:"vbr"`
+    Chapters         interface{} `json:"chapters"`
+    Height           int         `json:"height"`
+    LikeCount        int         `json:"like_count"`
+    Duration         int         `json:"duration"`
+    Fulltitle        string      `json:"fulltitle"`
+    PlaylistIndex    int         `json:"playlist_index"`
+    RequestedFormats []struct {
+        HTTPHeaders struct {
+            AcceptCharset  string `json:"Accept-Charset"`
+            AcceptLanguage string `json:"Accept-Language"`
+            AcceptEncoding string `json:"Accept-Encoding"`
+            Accept         string `json:"Accept"`
+            UserAgent      string `json:"User-Agent"`
+        } `json:"http_headers"`
+        Tbr               float64 `json:"tbr"`
+        Protocol          string  `json:"protocol"`
+        Format            string  `json:"format"`
+        URL               string  `json:"url"`
+        Vcodec            string  `json:"vcodec"`
+        FormatNote        string  `json:"format_note"`
+        Height            int     `json:"height,omitempty"`
+        DownloaderOptions struct {
+            HTTPChunkSize int `json:"http_chunk_size"`
+        } `json:"downloader_options"`
+        Width     int    `json:"width,omitempty"`
+        Ext       string `json:"ext"`
+        Filesize  int    `json:"filesize"`
+        Fps       int    `json:"fps,omitempty"`
+        FormatID  string `json:"format_id"`
+        PlayerURL string `json:"player_url"`
+        Quality   int    `json:"quality"`
+        Acodec    string `json:"acodec"`
+        Abr       int    `json:"abr,omitempty"`
+    } `json:"requested_formats"`
+    ViewCount          int         `json:"view_count"`
+    Playlist           string      `json:"playlist"`
+    Title              string      `json:"title"`
+    Filename           string      `json:"_filename"`
+    Creator            interface{} `json:"creator"`
+    Ext                string      `json:"ext"`
+    ID                 string      `json:"id"`
+    DislikeCount       int         `json:"dislike_count"`
+    PlaylistID         string      `json:"playlist_id"`
+    Abr                int         `json:"abr"`
+    UploaderURL        string      `json:"uploader_url"`
+    Categories         []string    `json:"categories"`
+    Fps                int         `json:"fps"`
+    StretchedRatio     interface{} `json:"stretched_ratio"`
+    SeasonNumber       interface{} `json:"season_number"`
+    Annotations        interface{} `json:"annotations"`
+    WebpageURLBasename string      `json:"webpage_url_basename"`
+    Acodec             string      `json:"acodec"`
+    DisplayID          string      `json:"display_id"`
+    AutomaticCaptions  struct {
+    } `json:"automatic_captions"`
+    Description        string        `json:"description"`
+    Tags               []interface{} `json:"tags"`
+    Track              interface{}   `json:"track"`
+    RequestedSubtitles interface{}   `json:"requested_subtitles"`
+    StartTime          interface{}   `json:"start_time"`
+    AverageRating      float64       `json:"average_rating"`
+    Uploader           string        `json:"uploader"`
+    FormatID           string        `json:"format_id"`
+    EpisodeNumber      interface{}   `json:"episode_number"`
+    UploaderID         string        `json:"uploader_id"`
+    Subtitles          struct {
+    } `json:"subtitles"`
+    PlaylistTitle string `json:"playlist_title"`
+    Thumbnails    []struct {
+        URL string `json:"url"`
+        ID  string `json:"id"`
+    } `json:"thumbnails"`
+    License      interface{} `json:"license"`
+    Artist       interface{} `json:"artist"`
+    ExtractorKey string      `json:"extractor_key"`
+    Vcodec       string      `json:"vcodec"`
+    AltTitle     interface{} `json:"alt_title"`
+    Thumbnail    string      `json:"thumbnail"`
+    ChannelID    string      `json:"channel_id"`
+    IsLive       interface{} `json:"is_live"`
+    EndTime      interface{} `json:"end_time"`
+    WebpageURL   string      `json:"webpage_url"`
+    Formats      []struct {
+        HTTPHeaders struct {
+            AcceptCharset  string `json:"Accept-Charset"`
+            AcceptLanguage string `json:"Accept-Language"`
+            AcceptEncoding string `json:"Accept-Encoding"`
+            Accept         string `json:"Accept"`
+            UserAgent      string `json:"User-Agent"`
+        } `json:"http_headers"`
+        FormatNote        string  `json:"format_note"`
+        Protocol          string  `json:"protocol"`
+        Format            string  `json:"format"`
+        URL               string  `json:"url"`
+        Vcodec            string  `json:"vcodec"`
+        Tbr               float64 `json:"tbr,omitempty"`
+        Abr               int     `json:"abr,omitempty"`
+        PlayerURL         string  `json:"player_url"`
+        DownloaderOptions struct {
+            HTTPChunkSize int `json:"http_chunk_size"`
+        } `json:"downloader_options,omitempty"`
+        Ext        string `json:"ext"`
+        Filesize   int    `json:"filesize,omitempty"`
+        FormatID   string `json:"format_id"`
+        Quality    int    `json:"quality,omitempty"`
+        Acodec     string `json:"acodec"`
+        Container  string `json:"container,omitempty"`
+        Height     int    `json:"height,omitempty"`
+        Width      int    `json:"width,omitempty"`
+        Fps        int    `json:"fps,omitempty"`
+        Resolution string `json:"resolution,omitempty"`
+    } `json:"formats"`
+    PlaylistUploaderID string      `json:"playlist_uploader_id"`
+    ChannelURL         string      `json:"channel_url"`
+    Resolution         interface{} `json:"resolution"`
+    Width              int         `json:"width"`
+    NEntries           int         `json:"n_entries"`
+    AgeLimit           int         `json:"age_limit"`
 }
-
 type yt_channel struct {
-    Uploader string `json:"uploader"`
+    Extractor string `json:"extractor"`
+    Type      string `json:"_type"`
+    Uploader  string `json:"uploader"`
     Entries []yt_video `json:"entries"`
+    ID                 string `json:"id"`
+    Title              string `json:"title"`
+    ExtractorKey       string `json:"extractor_key"`
+    UploaderID         string `json:"uploader_id"`
+    UploaderURL        string `json:"uploader_url"`
+    WebpageURL         string `json:"webpage_url"`
+    WebpageURLBasename string `json:"webpage_url_basename"`
 }
 
 type yt_metadata struct {
@@ -33,13 +155,15 @@ type yt_metadata struct {
     Last_request time.Time
 }
 
+const YT_CHAN_LOC="data/youtube/"
+
 func check_panic(e error) {
     if e != nil {
         panic(e)
     }
 }
 
-func get_yt_podcast(yt_chan string) (string) {
+func get_yt_podcast(yt_chan string) ([]byte) {
 
     // Get youtube channel URL
     var yt_chan_url = fmt.Sprintf("https://www.youtube.com/channel/%s", yt_chan)
@@ -97,7 +221,7 @@ func get_yt_podcast(yt_chan string) (string) {
             // Check for duplicates
             exists := false
             for _, crt_entry := range metadata.Chan_data.Entries {
-                if entry.Id == crt_entry.Id {
+                if entry.ID == crt_entry.ID {
                     exists = true
                 }
             }
@@ -131,34 +255,46 @@ func get_yt_podcast(yt_chan string) (string) {
     
     f.Write(chan_json)
     
-    p := &podcasts.Podcast{
-        Title:       metadata.Chan_data.Uploader,
-        Description: "",
-        Language:    "EN",
-    }
+    p := podcast.New(
+        metadata.Chan_data.Uploader,
+        "title",
+        "description",
+        nil, 
+        nil)
+    
+    p.IExplicit = "no"
+    
+    fmt.Printf("Generating XML for %d entries", len(metadata.Chan_data.Entries));
     
     for _, crt_entry := range metadata.Chan_data.Entries {
-        
-        upload_date, err := time.Parse("20060102", crt_entry.Upload_date)
+        upload_date, err := time.Parse("20060102", crt_entry.UploadDate)
         check_panic(err)
+
+        link := "http://" + get_podcast_addr() + "/podcast/youtube-video/" + crt_entry.ChannelID + "/" + crt_entry.ID
+        item := podcast.Item{
+            Title:       "Title: " + crt_entry.Title,
+            Link:        link,
+            Description: "Description: " + crt_entry.Description,
+            PubDate:     &upload_date,
+        }
         
-        duration := strconv.FormatInt(int64(crt_entry.Duration), 10)
+        item.AddDuration(int64(crt_entry.Duration))
         
-        p.AddItem(&podcasts.Item{
-            Title:   crt_entry.Title,
-            PubDate:  &podcasts.PubDate{upload_date},
-            Enclosure: &podcasts.Enclosure{
-                URL:    "http://www.example-podcast.com/my-podcast/2/episode.mp3",
-                Length: duration,
-                Type:   "MP3",
-            },
-        })
+        fmt.Printf("Checking filesize for %s\n", crt_entry.Title);
+        fsize := 0
+        for _, format := range crt_entry.Formats {
+            if format.Ext == "m4a" && format.Abr == 128 {
+                fsize = format.Filesize
+                fmt.Printf("Found as: %d\n", fsize);
+                break
+            }
+        }
+        
+        item.AddEnclosure(link, podcast.MP3, int64(fsize))
+        
+        _, err = p.AddItem(item)
+        check_panic(err)
     }
     
-    feed, err := p.Feed()
-    check_panic(err)
-    
-    xml, err := feed.XML()
-    
-    return xml
+    return p.Bytes()
 }
