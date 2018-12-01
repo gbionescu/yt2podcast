@@ -29,8 +29,8 @@ func get_video(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("video get %s %s", vars["yt_channel"], vars["video_id"])
 
-	//video_id := get_yt_video(vars["yt_channel"], vars["video_id"])
-	//fmt.Fprintf(w, xml)
+	video_path := get_yt_video(vars["yt_channel"], vars["video_id"])
+	http.ServeFile(w, r, video_path)
 }
 
 func load_cfg(path string) {
