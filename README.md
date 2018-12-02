@@ -8,7 +8,7 @@ Tested with:
   
 How to use:
   1. Build the package.
-  2. Create a json file that specifies how podcast clients connect to the podcast server:
+  2. Create a json file named `config.json` that specifies how podcast clients connect to the podcast server:
       ```
       {
         "Hostname": "your.domain.name",
