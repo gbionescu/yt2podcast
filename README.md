@@ -23,3 +23,7 @@ How to use:
   			- the same CGP Grey example can also be used as `http://your.domain.name:port/podcast/youtube/channel/UC2C_jShtL725hvbm1arSV9w`
 
 5. Wait for the application to scrape the YouTube channel. It currently uses youtube-dl to get information about the channel and it's very slow if there is a large number of uploaded videos. 
+
+# TODO
+
+- Look into making requests using YouTube API because youtube-dl is very slow at scraping channels
