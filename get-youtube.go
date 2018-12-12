@@ -157,24 +157,22 @@ type yt_metadata struct {
 }
 
 const YT_CHAN_LOC = "data/youtube/"
+const VIDEO_ABR = 128
 
 func check_panic(e error) {
 	if e != nil {
+		fmt.Println(e)
 		panic(e)
 	}
 }
 
-func get_yt_podcast(yt_chan string) []byte {
-
-	// Get youtube channel URL
-	var yt_chan_url = fmt.Sprintf("https://www.youtube.com/channel/%s", yt_chan)
+func get_yt_chan_data(yt_chan string) (yt_metadata, string) {
+	var metadata yt_metadata
 
 	// Check if channel exists and load the specific data
 	yt_chan_path := YT_CHAN_LOC + yt_chan
 	yt_chan_data := yt_chan_path + "/chan-data.json"
 	os.MkdirAll(yt_chan_path, 0777)
-
-	var metadata yt_metadata
 
 	if _, err := os.Stat(yt_chan_data); os.IsNotExist(err) {
 		fmt.Printf("Channel does not exist. Will create it.\n")
@@ -187,6 +185,61 @@ func get_yt_podcast(yt_chan string) []byte {
 		check_panic(err)
 	}
 
+	return metadata, yt_chan_data
+}
+
+func get_yt_video(yt_chan string, yt_video string) string {
+	metadata, _ := get_yt_chan_data(yt_chan)
+
+	fmt.Printf("Checking if %s is part of channel %s\n", yt_video, yt_chan)
+
+	found := false
+	expected_size := 0
+	for _, crt_entry := range metadata.Chan_data.Entries {
+		if crt_entry.ID == yt_video {
+			found = true
+			for _, format := range crt_entry.Formats {
+				fmt.Printf("%s %d\n", format.Ext, format.Abr)
+				if format.Ext == "m4a" && format.Abr == VIDEO_ABR {
+					expected_size = format.Filesize
+				}
+			}
+			break
+		}
+	}
+
+	if !found {
+		return ""
+	}
+
+	video_path := YT_CHAN_LOC + yt_chan + "/" + yt_video + ".m4a"
+	fmt.Printf("Expected size %d\n", expected_size)
+
+	if _, err := os.Stat(video_path); !os.IsNotExist(err) {
+		return video_path
+	}
+
+	fmt.Printf("Downloading %s to %s\n", yt_video, video_path)
+	// Get the video
+	out, err := exec.Command("youtube-dl",
+		"-f",
+		"140",
+		"http://www.youtube.com/watch?v="+yt_video,
+		"-o",
+		video_path).Output()
+
+	fmt.Printf("%s\n", out)
+	check_panic(err)
+
+	return video_path
+}
+
+func get_yt_podcast(yt_chan string) []byte {
+	// Get youtube channel URL
+	var yt_chan_url = fmt.Sprintf("https://www.youtube.com/%s", yt_chan)
+
+	// Get chan metadata and path
+	metadata, yt_chan_data := get_yt_chan_data(yt_chan)
 	last_request := metadata.Last_request
 
 	// Get JSON containing all channel information
@@ -200,8 +253,8 @@ func get_yt_podcast(yt_chan string) []byte {
 
 		// Only get videos uploaded after the last request
 		fmt.Printf("Adding to youtube-dl: %s\n", dateafter)
-		out, err := exec.Command("youtube-dl", "-j", "--dateafter", dateafter, yt_chan_url).Output()
-		check_panic(err)
+		out, _ := exec.Command("youtube-dl", "-ji", "--dateafter", dateafter, yt_chan_url).Output()
+		//check_panic(err)
 
 		// Per-video info is split by '\n'
 		videos := bytes.Split(out, []byte("\n"))
@@ -233,8 +286,8 @@ func get_yt_podcast(yt_chan string) []byte {
 			}
 		}
 	} else {
-		out, err := exec.Command("youtube-dl", "-J", yt_chan_url).Output()
-		check_panic(err)
+		out, err := exec.Command("youtube-dl", "-Ji", yt_chan_url).Output()
+		//check_panic(err)
 
 		// Decode the JSON
 		var fetched_data yt_channel
@@ -246,32 +299,45 @@ func get_yt_podcast(yt_chan string) []byte {
 		metadata.Chan_data.Entries = fetched_data.Entries
 	}
 
+	// Mark current time as being the last request done
 	metadata.Last_request = time.Now()
 
+	// Create channel data file
 	f, err := os.Create(yt_chan_data)
 	check_panic(err)
 
+	// Save the channel data in a nice format
 	chan_json, err := json.MarshalIndent(metadata, "", "  ")
 	check_panic(err)
-
 	f.Write(chan_json)
 
+	// Create a new podcast instance
 	p := podcast.New(
 		metadata.Chan_data.Uploader,
 		"title",
 		"description",
 		nil,
 		nil)
-
 	p.IExplicit = "no"
 
 	fmt.Printf("Generating XML for %d entries", len(metadata.Chan_data.Entries))
 
+	// Iterate over the channel entries to add each entry to the xml
 	for _, crt_entry := range metadata.Chan_data.Entries {
-		upload_date, err := time.Parse("20060102", crt_entry.UploadDate)
-		check_panic(err)
 
-		link := "http://" + get_podcast_addr() + "/podcast/youtube-video/" + crt_entry.ChannelID + "/" + crt_entry.ID
+		upload_date := time.Now()
+		if crt_entry.UploadDate != "" {
+			upload_date, err = time.Parse("20060102", crt_entry.UploadDate)
+			check_panic(err)
+		}
+
+		// Fill in the link for the current video entry
+		link := "http://" +
+			get_podcast_addr() +
+			"/podcast/youtube-video/" +
+			yt_chan + "/" + crt_entry.ID
+
+		// Add episode information to the podcast
 		item := podcast.Item{
 			Title:       "Title: " + crt_entry.Title,
 			Link:        link,
@@ -279,23 +345,27 @@ func get_yt_podcast(yt_chan string) []byte {
 			PubDate:     &upload_date,
 		}
 
+		// Set the duration
 		item.AddDuration(int64(crt_entry.Duration))
 
+		// Get the filesize data
 		fmt.Printf("Checking filesize for %s\n", crt_entry.Title)
 		fsize := 0
 		for _, format := range crt_entry.Formats {
-			if format.Ext == "m4a" && format.Abr == 128 {
+			if format.Ext == "m4a" && format.Abr == VIDEO_ABR {
 				fsize = format.Filesize
 				fmt.Printf("Found as: %d\n", fsize)
 				break
 			}
 		}
 
+		// Set filesize data
 		item.AddEnclosure(link, podcast.MP3, int64(fsize))
 
 		_, err = p.AddItem(item)
 		check_panic(err)
 	}
 
+	// Return the generated XML
 	return p.Bytes()
 }
