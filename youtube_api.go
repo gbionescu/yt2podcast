@@ -1,5 +1,3 @@
-// Sample Go code for user authorization
-
 package main
 
 import (
@@ -18,10 +16,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/youtube/v3"
 )
-
-const missingClientSecretsMessage = `
-Please configure OAuth 2.0
-`
 
 // getClient uses a Context and Config to retrieve a Token
 // then generate a Client. It returns the generated Client.
@@ -105,14 +99,21 @@ func handleError(err error, message string) {
 }
 
 func get_channel_uploads_id(service *youtube.Service, part string, id string) string {
+	fmt.Printf("Checking %s\n", id)
+
 	call := service.Channels.List(part)
-
-	if id != "" {
-		call = call.Id(id)
-	}
-
+	fmt.Printf("Checking if it's a channel ID\n")
+	call = call.Id(id)
 	response, err := call.Do()
 	handleError(err, "")
+
+	if len(response.Items) == 0 {
+		call = service.Channels.List(part)
+		fmt.Printf("Checking it it's a user\n")
+		call = call.ForUsername(id)
+		response, err = call.Do()
+		handleError(err, "")
+	}
 
 	return response.Items[0].ContentDetails.RelatedPlaylists.Uploads
 }
@@ -138,16 +139,87 @@ func get_service() *youtube.Service {
 	return service
 }
 
-/* snip
-uploads_id := get_channel_uploads_id(service, "snippet,contentDetails,status", "")
-fmt.Printf("%s\n", uploads_id)
+func api_get_yt_channel(channel string) string {
+	fmt.Printf("API get youtube channel %s\n", channel)
 
-call := service.PlaylistItems.List("id,snippet,contentDetails")
+	// Get the uploads playlist ID
+	var service = get_service()
+	uploads_id := get_channel_uploads_id(service, "snippet,contentDetails,status", channel)
 
-call = call.PlaylistId(uploads_id)
-response, err := call.Do()
-handleError(err, "")
+	return api_get_yt_playlist(uploads_id)
+}
 
-nice, _ := json.MarshalIndent(response, "", "  ")
-fmt.Printf("%s\n", nice)
-*/
+func get_playlist_page(service *youtube.Service, part string, id string, page string) *youtube.PlaylistItemListResponse {
+	call := service.PlaylistItems.List(part)
+
+	// Get maximum number of items
+	call = call.MaxResults(50)
+	call = call.PlaylistId(id)
+
+	// Check if we should request a page
+	if page != "" {
+		call = call.PageToken(page)
+	}
+
+	response, err := call.Do()
+
+	handleError(err, "")
+
+	return response
+}
+
+func api_get_yt_playlist(id string) string {
+	fmt.Printf("API get playlist ID %s\n", id)
+
+	var video_list []string
+	service := get_service()
+
+	next_page_token := ""
+	for {
+		response := get_playlist_page(service, "snippet,contentDetails", id, next_page_token)
+
+		for _, item := range response.Items {
+			video_list = append(video_list, item.ContentDetails.VideoId)
+		}
+
+		if response.NextPageToken == "" {
+			break
+		}
+		next_page_token = response.NextPageToken
+	}
+
+	return gen_xml_yt_playlist(id, video_list)
+}
+
+// Gets data for a given playlist ID
+func api_get_playlist_data(id string) *youtube.PlaylistListResponse {
+	service := get_service()
+	call := service.Playlists.List("snippet,contentDetails")
+
+	// Set max results to 0 because we only want playlist metadata
+	call = call.MaxResults(0)
+
+	call = call.Id(id)
+
+	response, _ := call.Do()
+
+	return response
+}
+
+// Gets data for a given youtube video ID
+func api_get_video_data(id string) *youtube.VideoListResponse {
+	fmt.Printf("Getting video data for %s\n", id)
+
+	service := get_service()
+	call := service.Videos.List("snippet,contentDetails,statistics")
+	call = call.Id(id)
+
+	response, err := call.Do()
+	handleError(err, "")
+
+	return response
+}
+
+func api_get_yt_video(id string) string {
+	return ""
+}

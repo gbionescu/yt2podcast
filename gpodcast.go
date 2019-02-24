@@ -17,40 +17,40 @@ type configdata struct {
 
 var cfg_data configdata
 
+// Get XML for a channel
 func get_podcast(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	request_type := vars["type"]
-	if request_type != "user" && request_type != "channel" {
-		return
-	}
-
-	xml := get_yt_podcast(request_type + "/" + vars["yt_channel"])
+	xml := api_get_yt_channel(vars["yt_channel"])
 	fmt.Fprintf(w, string(xml))
 }
 
+// Video request entry point
 func get_video(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	request_type := vars["type"]
-	if request_type != "user" && request_type != "channel" {
-		return
-	}
-
-	fmt.Printf("video get channel: %s, ID: %s\n", vars["yt_channel"], vars["video_id"])
-
-	video_path := get_yt_video(request_type+"/"+vars["yt_channel"], vars["video_id"])
+	video_path := download_yt_video(vars["video_id"])
 	fmt.Printf("Serving %s\n", video_path)
 	http.ServeFile(w, r, video_path)
 }
 
-func load_cfg(path string) {
-	data, err := ioutil.ReadFile(path)
-	check_panic(err)
-	err = json.Unmarshal(data, &cfg_data)
-	check_panic(err)
+// Get XML for a playlist
+func get_playlist(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	fmt.Printf("Get playlist %s\n", vars["playlist_id"])
+	xml := api_get_yt_playlist(vars["playlist_id"])
+
+	fmt.Fprintf(w, string(xml))
 }
 
+// Load config from disk
+func load_cfg(path string) {
+	data, _ := ioutil.ReadFile(path)
+	_ = json.Unmarshal(data, &cfg_data)
+}
+
+// Returns the port on which the server is running on
 func get_port() string {
 	return cfg_data.Port
 }
@@ -63,8 +63,9 @@ func main() {
 	load_cfg("config.json")
 
 	r := mux.NewRouter()
-	r.HandleFunc("/podcast/youtube/{type}/{yt_channel}", get_podcast)
-	r.HandleFunc("/podcast/youtube-video/{type}/{yt_channel}/{video_id}", get_video)
+	r.HandleFunc("/api/ytchan/{yt_channel}", get_podcast)
+	r.HandleFunc("/api/ytplaylist/{playlist_id}", get_playlist)
+	r.HandleFunc("/api/ytv/{video_id}", get_video)
 
 	server := &http.Server{
 		Handler:      r,
