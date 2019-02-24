@@ -5,6 +5,7 @@ import (
 	"github.com/eduncan911/podcast"
 )
 
+// Generate podcast XML using a given playlist ID and a list of youtube videos
 func gen_xml_yt_playlist(plist_id string, list []string) string {
 	plist_data := get_playlist_data(plist_id)
 

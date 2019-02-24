@@ -98,6 +98,7 @@ func handleError(err error, message string) {
 	}
 }
 
+// Get the upload playlist ID for a channel
 func get_channel_uploads_id(service *youtube.Service, part string, id string) string {
 	fmt.Printf("Checking %s\n", id)
 
@@ -139,6 +140,7 @@ func get_service() *youtube.Service {
 	return service
 }
 
+// Get XML for a youtube channel - returns XML for uploads
 func api_get_yt_channel(channel string) string {
 	fmt.Printf("API get youtube channel %s\n", channel)
 
@@ -149,6 +151,8 @@ func api_get_yt_channel(channel string) string {
 	return api_get_yt_playlist(uploads_id)
 }
 
+// Gets videos listed on a playlist page
+// Needed because youtube limits a request to maximum 50 videos
 func get_playlist_page(service *youtube.Service, part string, id string, page string) *youtube.PlaylistItemListResponse {
 	call := service.PlaylistItems.List(part)
 
@@ -168,20 +172,25 @@ func get_playlist_page(service *youtube.Service, part string, id string, page st
 	return response
 }
 
+// Generate XML for a playlist ID
 func api_get_yt_playlist(id string) string {
 	fmt.Printf("API get playlist ID %s\n", id)
 
 	var video_list []string
 	service := get_service()
 
+	// Go through each page and collect the videos
+	// TODO cache content to make less requests
 	next_page_token := ""
 	for {
+		// Get a playlist page and add video IDs to the list
 		response := get_playlist_page(service, "snippet,contentDetails", id, next_page_token)
 
 		for _, item := range response.Items {
 			video_list = append(video_list, item.ContentDetails.VideoId)
 		}
 
+		// Keep going while there is a next page
 		if response.NextPageToken == "" {
 			break
 		}
@@ -218,8 +227,4 @@ func api_get_video_data(id string) *youtube.VideoListResponse {
 	handleError(err, "")
 
 	return response
-}
-
-func api_get_yt_video(id string) string {
-	return ""
 }

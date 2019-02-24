@@ -55,6 +55,7 @@ func get_port() string {
 	return cfg_data.Port
 }
 
+// Get the address where the podcast is running
 func get_podcast_addr() string {
 	return cfg_data.Hostname + ":" + cfg_data.Port
 }
