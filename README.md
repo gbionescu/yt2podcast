@@ -5,7 +5,7 @@ Tested with:
   - Podcast Addict on Android (works)
   - gPodder on Linux (works)
   - iTunes on Mac (does not work) - probably the XML needs more tags to satisfy iTunes
-  
+
 How to use:
   1. Build the package.
   2. Create a json file named `config.json` that specifies how podcast clients connect to the podcast server:
@@ -17,13 +17,6 @@ How to use:
       ```
   3. Run the application.
   4. Copy the username or channel ID of the YouTube channel that you want to listen to and add the following link in your podcast player:
-  		- `http://your.domain.name:port/podcast/youtube/user/<username>` if you're using the username
-  			- for example, CGP Grey, which can be found at `https://www.youtube.com/user/CGPGrey` would be used as `http://your.domain.name:port/podcast/youtube/user/CGPGrey`
-  		- `http://your.domain.name:port/podcast/youtube/channel/<channel ID>` if you're using the channel ID
-  			- the same CGP Grey example can also be used as `http://your.domain.name:port/podcast/youtube/channel/UC2C_jShtL725hvbm1arSV9w`
+  		- `http://your.domain.name:port/api/ytchan/<username or channel ID>
+  			- for example, CGP Grey, which can be found at `https://www.youtube.com/user/CGPGrey` would be used as `http://your.domain.name:port/api/ytchan/CGPGrey` or `http://your.domain.name:port/api/ytchan/UC2C_jShtL725hvbm1arSV9w`
 
-5. Wait for the application to scrape the YouTube channel. It currently uses youtube-dl to get information about the channel and it's very slow if there is a large number of uploaded videos. 
-
-# TODO
-
-- Look into making requests using YouTube API because youtube-dl is very slow at scraping channels
