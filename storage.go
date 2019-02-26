@@ -36,8 +36,9 @@ func download_yt_video(id string) string {
 		fmt.Printf("Downloading video %s to %s\n", id, video_path)
 
 		out, _ := exec.Command("youtube-dl",
-			"-f",
-			"140",
+			"-x",
+			"--audio-format",
+			"mp3",
 			"https://www.youtube.com/watch?v="+id,
 			"-o",
 			video_path).Output()
