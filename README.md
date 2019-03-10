@@ -1,5 +1,5 @@
 # yt2podcast
-Turn a YouTube channel into a podcast channel using yt2podcast and listen the audio track using your favorite podcast player.
+Turn a YouTube channel into a podcast channel using yt2podcast and listen audio tracks using your favorite podcast player.
 
 Tested with:
   - Podcast Addict on Android (works)
@@ -17,6 +17,6 @@ How to use:
       ```
   3. Run the application.
   4. Copy the username or channel ID of the YouTube channel that you want to listen to and add the following link in your podcast player:
-  		- `http://your.domain.name:port/api/ytchan/<username or channel ID>
+  		- `http://your.domain.name:port/api/ytchan/<username or channel ID>`
   			- for example, CGP Grey, which can be found at `https://www.youtube.com/user/CGPGrey` would be used as `http://your.domain.name:port/api/ytchan/CGPGrey` or `http://your.domain.name:port/api/ytchan/UC2C_jShtL725hvbm1arSV9w`
 
