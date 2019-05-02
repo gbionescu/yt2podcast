@@ -21,4 +21,5 @@ How to use:
   5. Copy the username or channel ID of the YouTube channel that you want to listen to and add the following link in your podcast player:
   		- `http://your.domain.name:port/api/ytchan/<username or channel ID>`
   		- for example, CGP Grey, which can be found at `https://www.youtube.com/user/CGPGrey` would be used as `http://your.domain.name:port/api/ytchan/CGPGrey` or `http://your.domain.name:port/api/ytchan/UC2C_jShtL725hvbm1arSV9w`
+      You can also add a playlist directly by adding `http://your.domain.name:port/api/ytplaylist/<playlist ID>`
   6. Note: You will need to authenticate your application with the YouTube servers after adding a channel or playlist, so keep an eye on the console where the application was launched.
