@@ -1,5 +1,5 @@
 {
     "Hostname": "my-domain.com",
     "port": "8888"
-    "MaxYTStorageBytes": 123456
+    "MaxYTStorageBytes": 4294967296
 }
