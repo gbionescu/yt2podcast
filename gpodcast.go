@@ -7,12 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"time"
 )
 
 type configdata struct {
-	Hostname string `json:"hostname"`
-	Port     string `json:"port"`
+	Hostname          string `json:"hostname"`
+	Port              string `json:"port"`
+	MaxYTStorageBytes int64  `json:"MaxYTStorageBytes"`
 }
 
 var cfg_data configdata
@@ -28,6 +30,9 @@ func get_podcast(w http.ResponseWriter, r *http.Request) {
 // Video request entry point
 func get_video(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+
+	dump, _ := httputil.DumpRequest(r, true)
+	fmt.Println(string(dump))
 
 	video_path := download_yt_video(vars["video_id"])
 	fmt.Printf("Serving %s\n", video_path)
@@ -58,6 +63,11 @@ func get_port() string {
 // Get the address where the podcast is running
 func get_podcast_addr() string {
 	return cfg_data.Hostname + ":" + cfg_data.Port
+}
+
+// Get maximum youtube storage size
+func get_yt_max_storage() int64 {
+	return cfg_data.MaxYTStorageBytes
 }
 
 func main() {

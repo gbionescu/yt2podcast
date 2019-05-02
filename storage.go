@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"sort"
+	"syscall"
 	"time"
 )
 
@@ -26,6 +28,47 @@ type yt_playlist struct {
 const YT_DATA_LOC = "data/youtube/"
 const YT_STOR_LOC = "data/youtube_storage/"
 const VIDEO_ABR = 128
+const VIDEO_META_PREFIX = "video-"
+
+func clean_old_downloads() {
+	// Get a list of files from the storage
+	files, _ := ioutil.ReadDir(YT_STOR_LOC)
+
+	// Create a map of files with the last access time as the key
+	var file_names = make(map[int64]string)
+	var file_sizes = make(map[int64]int64)
+	var access []int64
+	for _, f := range files {
+		// Get file information
+		info, _ := os.Stat(YT_STOR_LOC + f.Name())
+
+		// Get the access time for the current file
+		stat := info.Sys().(*syscall.Stat_t)
+
+		// Store size and name data
+		file_names[stat.Atim.Sec] = f.Name()
+		file_sizes[stat.Atim.Sec] = f.Size()
+		access = append(access, stat.Atim.Sec)
+	}
+
+	// Sort the access time in reverse so that the most recent
+	// accessed files are at the beginnig
+	sort.Slice(access, func(i, j int) bool { return access[i] > access[j] })
+
+	// Get the maximum storage size
+	max_size := get_yt_max_storage()
+	crt_size := int64(0)
+	for _, access := range access {
+		// Beginning with the most recently accessed file, sum the file sizes
+		crt_size += file_sizes[access]
+
+		// If the sum of the file sizes exceeds the limit, delete the files
+		if crt_size > max_size {
+			fmt.Println("Removing " + file_names[access])
+			os.Remove(YT_STOR_LOC + file_names[access])
+		}
+	}
+}
 
 func download_yt_video(id string) string {
 	fmt.Printf("Get request for youtube video %s\n", id)
@@ -44,6 +87,8 @@ func download_yt_video(id string) string {
 			video_path).Output()
 		fmt.Println(string(out))
 	}
+
+	clean_old_downloads()
 
 	return video_path
 }
@@ -87,7 +132,7 @@ func get_yt_video_data(id string) *yt_video {
 	os.MkdirAll(YT_DATA_LOC, 0777)
 
 	// Check if video metadata exists
-	video_path := YT_DATA_LOC + "/video-" + id + ".json"
+	video_path := YT_DATA_LOC + VIDEO_META_PREFIX + id + ".json"
 	if _, err := os.Stat(video_path); os.IsNotExist(err) {
 		fmt.Printf("Metadata doesn't exist\n")
 
