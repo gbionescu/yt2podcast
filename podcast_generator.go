@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"github.com/eduncan911/podcast"
+	"strings"
 )
 
 // Generate podcast XML using a given playlist ID and a list of youtube videos
@@ -28,15 +31,24 @@ func gen_xml_yt_playlist(plist_id string, list []string) string {
 		link := "http://" + get_podcast_addr() +
 			"/api/ytv/" + video_data.ID
 
+		title := strings.Replace(video_data.Title, "%", "%%", -1)
+
 		description := video_data.Description
 		if description == "" {
 			description = "No description"
 		}
+		description = strings.Replace(description, "%", "%%", -1)
+
+		title_escaped := bytes.NewBufferString("")
+		descr_escaped := bytes.NewBufferString("")
+
+		xml.EscapeText(title_escaped, []byte(title))
+		xml.EscapeText(descr_escaped, []byte(description))
 
 		item := podcast.Item{
-			Title:       video_data.Title,
+			Title:       title_escaped.String(),
 			Link:        link,
-			Description: description,
+			Description: descr_escaped.String(),
 			PubDate:     &video_data.UploadDate,
 		}
 
