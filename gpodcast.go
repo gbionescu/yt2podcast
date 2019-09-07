@@ -42,7 +42,7 @@ func load_cfg(path string) {
 
 // Returns the port on which the server is running on
 func get_port() string {
-		return cfg_data.Port
+	return cfg_data.Port
 }
 
 // Get the address where the podcast is running
